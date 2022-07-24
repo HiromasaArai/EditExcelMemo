@@ -270,7 +270,7 @@
  [],
  False,
  False,
- 1653820720,
+ 1655941731,
  [('runw.exe',
    'c:\\users\\arai\\pycharmprojects\\editexcelmemo\\.venv\\lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit\\runw.exe',
    'EXECUTABLE')])

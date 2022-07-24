@@ -384,8 +384,14 @@ def memo2pdf(wb7: xlwings.main.Book, print_size=PaperSize.xlPaperA4):
     sh_page_setup(sh_contents, print_size)
     sh_page_setup(sh_index, print_size)
 
+    # 表紙裏の作成
+    str_表紙裏sh名 = "表紙裏"
+    sh_表紙裏 = wb7.sheets.add(str_表紙裏sh名, after=Constシート名.str_表紙)
+    sh_表紙裏.range("A1").value = " "
+
     to_pdf_include = [
         Constシート名.str_表紙,
+        str_表紙裏sh名,
         Constシート名.str_目次,
         Constシート名.str_内容,
         Constシート名.str_索引
@@ -393,6 +399,9 @@ def memo2pdf(wb7: xlwings.main.Book, print_size=PaperSize.xlPaperA4):
 
     # PDF化
     wb7.to_pdf(include=to_pdf_include)
+
+    # 使い終わったシートを削除
+    sh_表紙裏.delete()
 
 
 def update_memo(arg_wb):
