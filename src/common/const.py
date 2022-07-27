@@ -1,6 +1,10 @@
 import datetime
 
 
+class Const総括作成用設定ファイルシート名:
+    str設定 = "設定"
+
+
 class Constシート名:
     str_入力 = "入力"
     str_表紙 = "表紙"

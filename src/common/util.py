@@ -2,7 +2,6 @@ import configparser
 import datetime
 import os
 import re
-import time
 from sys import exit
 
 import xlwings as xlwings

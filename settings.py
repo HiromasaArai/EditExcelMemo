@@ -45,9 +45,13 @@ class ConstDir:
 
     __resources = os.path.join(project, r"exe\resources")
     csv = os.path.join(__resources, "csv")
+    excel = os.path.join(__resources, "excel")
     template = os.path.join(__resources, "templates")
 
 
 class ConstFullname:
     settings = os.path.join(ConstDir.project, "settings.py")
     err_logs_filename = os.path.join(ConstDir.err_logs, "err.log")
+    excel_input_file_総括作成用設定ファイル = os.path.join(ConstDir.excel, "総括作成用設定ファイル.xlsx")
+    excel_output_file_学習メモ総括 = os.path.join(ConstDir.output, "学習メモ総括.xlsx")
+    excel_output_file_学習メモ総括bkp = os.path.join(ConstDir.output, "学習メモ総括bkp.xlsx")
