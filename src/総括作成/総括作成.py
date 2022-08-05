@@ -94,8 +94,8 @@ def void_学習メモ総括を作成():
         if is学習メモである(xl):
             # 学習メモをロード
             wb学習メモ = openpyxl.load_workbook(filename=xl, read_only=True)
-            ws学習メモ_目次 = wb学習メモ[Constシート名.str_目次]
-            ws学習メモ_索引 = wb学習メモ[Constシート名.str_索引]
+            ws学習メモ_目次 = wb学習メモ[Constシート名.str目次]
+            ws学習メモ_索引 = wb学習メモ[Constシート名.str索引]
             int_目次_max_row = ws学習メモ_目次.max_row
             int_索引_max_row = ws学習メモ_索引.max_row
             if int_目次_max_row <= 2 or int_索引_max_row <= 2: continue

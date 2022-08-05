@@ -1,10 +1,6 @@
 /src/test/
 /build
 /dist
-メモ更新.spec
-別名登録.spec
-新規メモ作成.spec
-索引検索.spec
 /exe/resources/excel/総括作成用設定ファイル.xlsx
 /exe/output/学習メモ総括.xlsx
 /exe/output/学習メモ総括bkp.xlsx

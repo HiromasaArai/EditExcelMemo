@@ -1,36 +1,42 @@
-from src.common.const import Constシート名
-from src.common.util import get_cell_range, XlwingsSpeedUp
-
-MY_ROW = 3
+from src.common.const import Constシート名, ListIndex索引登録シート表
+from src.common.util import get_cell_range, XlwingsSpeedUp, common_err_chk
+from src.entity.entity索引 import Entity索引
 
 
 def search_index(arg_wb):
-    sh = arg_wb.sheets(Constシート名.str_索引登録)
+    # フールプルーフ
+    common_err_chk(arg_wb)
+
+    sh = arg_wb.sheets(Constシート名.str索引登録)
+    entity索引 = Entity索引(sh)
     rg = get_cell_range(sh, "B6", "B5")
-    search_val = sh.range("G3").value
-    index_data = rg.options(ndim=2).value
-    msg_rg = sh.range("J1")
+    val検索値 = entity索引.val登録用管理No
+    list_index = rg.options(ndim=2).value
     is_being_val = False
 
-    if search_val is not None:
-        for i in range(rg.rows.count):
-            if index_data[i][5] == search_val:
-                sh.cells(MY_ROW, 3).value = index_data[i][1]
-                sh.cells(MY_ROW, 4).value = index_data[i][2]
-                sh.cells(MY_ROW, 5).clear_contents()
-                sh.cells(MY_ROW, 6).clear_contents()
-                sh.cells(MY_ROW, 9).value = index_data[i][3]
-                sh.cells(MY_ROW, 10).value = index_data[i][4]
+    if val検索値 is not None:
+        # 検索したい値がある
+        for index_row in list_index:
+            if index_row[ListIndex索引登録シート表.int管理No] == val検索値:
+                # 検索結果に値が存在する
+                entity索引.cell登録用目次No.value = index_row[ListIndex索引登録シート表.int目次No]
+                entity索引.cell登録用関係位置.value = index_row[ListIndex索引登録シート表.int関係位置]
+                entity索引.cell登録用分類.value = index_row[ListIndex索引登録シート表.int分類]
+                entity索引.cell登録用標語.clear_contents()
+                entity索引.cell登録用ヒョウゴ.clear_contents()
+                entity索引.cell確認用標語.value = index_row[ListIndex索引登録シート表.int標語]
+                entity索引.cell確認用ヒョウゴ.value = index_row[ListIndex索引登録シート表.intヒョウゴ]
                 is_being_val = True
-                msg_rg.clear_contents()
+                entity索引.cell_msg.clear_contents()
                 break
 
     if not is_being_val:
-        sh.cells(MY_ROW, 3).clear_contents()
-        sh.cells(MY_ROW, 4).clear_contents()
-        sh.cells(MY_ROW, 9).clear_contents()
-        sh.cells(MY_ROW, 10).clear_contents()
-        msg_rg.value = "値が存在しませんでした。"
+        entity索引.cell登録用目次No.clear_contents()
+        entity索引.cell登録用関係位置.clear_contents()
+        entity索引.cell登録用分類.clear_contents()
+        entity索引.cell確認用標語.clear_contents()
+        entity索引.cell確認用ヒョウゴ.clear_contents()
+        entity索引.cell_msg.value = "値が存在しませんでした。"
 
 
 if __name__ == '__main__':

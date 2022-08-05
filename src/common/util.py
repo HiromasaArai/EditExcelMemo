@@ -72,16 +72,16 @@ def output_file2temp(filename, output_txt):
     output_file(output_txt, file_fullname)
 
 
-def get_cell_range(sh: xlwings.main.Sheet, srn, ern):
+def get_cell_range(sh: xlwings.main.Sheet, start_address, end_address):
     """
     連続するセル範囲を取得する
     :param sh: xlwingsのシートオブジェクト
-    :param srn: start_rg_nm 始まりのセル A1
-    :param ern: 終わりのセルの起点となるもの A1
+    :param start_address: start_rg_nm 始まりのセル A1
+    :param end_address: 終わりのセルの起点となるもの A1
     :return: セル範囲
     """
-    start_rg = sh.range(srn)
-    last_rg = sh.range(sh.range(ern).end("down").row, sh.range(ern).end("right").column)
+    start_rg = sh.range(start_address)
+    last_rg = sh.range(sh.range(end_address).end("down").row, sh.range(end_address).end("right").column)
     return sh.range(start_rg, last_rg)
 
 
@@ -212,15 +212,13 @@ def create_cell_info(rg: xlwings.main.Range, rg_head: str):
 def common_err_chk(err_chk_wb):
     # フールプルーフ
     # すべてのシートが存在していることを確認する
-    list_ブック内の全シート = [i.name for i in err_chk_wb.sheets]
-
-    is_term1 = Constシート名.str_表紙 in list_ブック内の全シート
-    is_term2 = Constシート名.str_内容 in list_ブック内の全シート
-    is_term3 = Constシート名.str_入力 in list_ブック内の全シート
-    is_term4 = Constシート名.str_目次 in list_ブック内の全シート
-    is_term5 = Constシート名.str_索引 in list_ブック内の全シート
-    is_term6 = Constシート名.str_索引登録 in list_ブック内の全シート
-
-    if not (is_term1 and is_term2 and is_term3 and is_term4 and is_term5 and is_term6):
+    list_strブック内の全シート名 = [i.name for i in err_chk_wb.sheets]
+    if not (Constシート名.str表紙 in list_strブック内の全シート名
+            and Constシート名.str内容 in list_strブック内の全シート名
+            and Constシート名.str入力 in list_strブック内の全シート名
+            and Constシート名.str目次 in list_strブック内の全シート名
+            and Constシート名.str索引 in list_strブック内の全シート名
+            and Constシート名.str索引登録 in list_strブック内の全シート名
+            and Constシート名.strPDF追加 in list_strブック内の全シート名):
         print("Excelが対象のものと異なります。")
         exit(1)
