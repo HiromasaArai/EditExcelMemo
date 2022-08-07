@@ -466,7 +466,9 @@ def update_memo(arg_wb):
 
     # 入力シートのデータを取得してソート
     rg = func_input_sh(arg_wb)
-    ish_array = sorted(rg.options(ndim=2).value, key=lambda x: x[ListIndex入力シート表.int関係位置])
+    ish_array = rg.options(ndim=2).value
+    ish_array = sorted(ish_array, key=lambda x: x[ListIndex入力シート表.int分類])
+    ish_array = sorted(ish_array, key=lambda x: x[ListIndex入力シート表.int関係位置])
 
     # 各シート初期化 >>目次、内容、索引
     sh_format(arg_wb.sheets(Constシート名.str目次))
