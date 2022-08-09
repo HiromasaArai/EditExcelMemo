@@ -83,6 +83,7 @@ def func_toc_sh(wb2: xlwings.main.Book, ish_array):
 
     # 関係位置が同一であるものを色分けする。
     int_col関係位置 = ListIndex目次シート表.int_col関係位置
+    int_col分類 = ListIndex目次シート表.int_col分類
     int_col管理番号 = ListIndex目次シート表.int_col管理番号
     tuple背景色設定 = Const目次シート書式.tuple背景色設定
     row_array = create_cell_info(rg=toc_sh_rg, rg_head="B3")
@@ -91,7 +92,9 @@ def func_toc_sh(wb2: xlwings.main.Book, ish_array):
     for i_row in range(len(row_array)):
         if i_row == 0:
             continue
-        is_switch = row_array[i_row - 1][int_col関係位置].val == row_array[i_row][int_col関係位置].val
+        is_switch = (
+                row_array[i_row - 1][int_col関係位置].val == row_array[i_row][int_col関係位置].val
+                and row_array[i_row - 1][int_col分類].val == row_array[i_row][int_col分類].val)
         if is_color_change:
             if is_switch:
                 pass
