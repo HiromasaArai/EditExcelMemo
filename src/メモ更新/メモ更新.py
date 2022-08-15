@@ -380,6 +380,12 @@ def sh_page_setup(sh: xlwings.main.Sheet, print_size):
     sh.api.PageSetup.FitToPagesTall = False
     sh.api.PageSetup.CenterHorizontally = True
     sh.api.PageSetup.PaperSize = print_size
+    if sh.name == Constシート名.str表紙:
+        sh.api.PageSetup.CenterHeader = ""
+        sh.api.PageSetup.CenterFooter = ""
+    else:
+        sh.api.PageSetup.CenterHeader = "&A"
+        sh.api.PageSetup.CenterFooter = "&P/&N"
 
 
 def memo2pdf(wb7: xlwings.main.Book, list_valPDF追加シート表, print_size=PaperSize.xlPaperA4):
@@ -391,16 +397,11 @@ def memo2pdf(wb7: xlwings.main.Book, list_valPDF追加シート表, print_size=P
     :param print_size:
     :return:
     """
-    sh_cover = wb7.sheets(Constシート名.str表紙)
-    sh_toc = wb7.sheets(Constシート名.str目次)
-    sh_contents = wb7.sheets(Constシート名.str内容)
-    sh_index = wb7.sheets(Constシート名.str索引)
-
     # ページレイアウト
-    sh_page_setup(sh_cover, print_size)
-    sh_page_setup(sh_toc, print_size)
-    sh_page_setup(sh_contents, print_size)
-    sh_page_setup(sh_index, print_size)
+    sh_page_setup(wb7.sheets(Constシート名.str表紙), print_size)
+    sh_page_setup(wb7.sheets(Constシート名.str目次), print_size)
+    sh_page_setup(wb7.sheets(Constシート名.str内容), print_size)
+    sh_page_setup(wb7.sheets(Constシート名.str索引), print_size)
 
     # 表紙裏の作成
     str_表紙裏sh名 = "表紙裏"
