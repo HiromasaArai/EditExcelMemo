@@ -10,7 +10,6 @@ from src.common.const import Constシート名, ListIndex入力シート表, Lis
 from src.common.util import get_cell_range, sh_format, XlwingsSpeedUp, create_cell_info, common_err_chk
 
 STR_目次の列自動調整範囲 = "B:I"
-STR_フォントネーム = "ＭＳ ゴシック"
 
 
 def func_input_sh(wb1: xlwings.main.Book):
@@ -19,15 +18,14 @@ def func_input_sh(wb1: xlwings.main.Book):
     :param wb1:
     :return:
     """
-    sh = wb1.sheets(Constシート名.str入力)
+    sh入力 = wb1.sheets(Constシート名.str入力)
 
     # 日付が入っていないものに関しては補完を行う。
     # 入力シートの日付欄を配列として取得
-    start_cell = sh.cells(Const入力シート表.int_rowデータ開始, Const入力シート表.int_col作成日)
-    temp_cell = sh.cells(Const入力シート表.int_rowデータ開始 - 1, Const入力シート表.int_col標語)
-    last_cell = sh.cells(temp_cell.end("down").row, temp_cell.end("right").column)
-    # date_array = get_cell_range(sh, "J3", "C2").options(ndim=2).value
-    date_array = sh.range(start_cell, last_cell).options(ndim=2).value
+    start_cell = sh入力.cells(Const入力シート表.int_rowデータ開始, Const入力シート表.int_col作成日)
+    temp_cell = sh入力.cells(Const入力シート表.int_rowデータ開始 - 1, Const入力シート表.int_col標語)
+    last_cell = sh入力.cells(temp_cell.end("down").row, temp_cell.end("right").column)
+    date_array = sh入力.range(start_cell, last_cell).options(ndim=2).value
 
     # 配列の中でNoneのものについては今日の日付を入力する。
     for i in range(len(date_array)):
@@ -38,7 +36,7 @@ def func_input_sh(wb1: xlwings.main.Book):
     # 入力シートの日付欄の補完
     start_cell.value = date_array
 
-    return get_cell_range(sh, "A3", "C2")
+    return get_cell_range(sh入力, "A3", "C2")
 
 
 def func_toc_sh(wb2: xlwings.main.Book, ish_array):
@@ -48,45 +46,39 @@ def func_toc_sh(wb2: xlwings.main.Book, ish_array):
     :param ish_array:
     :return:項番の付与された入力シートデータ（二次元配列）
     """
-    sh = wb2.sheets(Constシート名.str目次)
-
+    sh目次 = wb2.sheets(Constシート名.str目次)
     for i in range(len(ish_array)):
         # 項目番号をリストに追加
         ish_array[i].append(i + 1)
 
-    toc_array = []
-
+    list目次 = []
     for i in ish_array:
-        toc_array.append([
+        list目次.append([
             i[ListIndex入力シート表.int関係位置],
             i[ListIndex入力シート表.int分類],
             i[ListIndex入力シート表.int標語],
             i[ListIndex入力シート表.int作成日],
             i[ListIndex入力シート表.int更新日],
             i[ListIndex入力シート表.int目次No],
-            None,
+            None, # 状態
             i[ListIndex入力シート表.int管理No]
         ])
 
     # シートに値を記入
-    sh.range("B3").value = toc_array
+    sh目次.range("B3").value = list目次
 
-    # Excelの指定範囲を配列として取得
-    toc_sh_rg = get_cell_range(sh, "B3", "B2")
-
-    # 格子状に罫線を引く
-    toc_sh_rg.api.Borders.LineStyle = LineStyle.xlContinuous
-    # フォントネームを強制
-    toc_sh_rg.font.name = STR_フォントネーム
-    # 列幅自動調整
-    sh.range(STR_目次の列自動調整範囲).autofit()
+    # 書式設定
+    rg目次 = get_cell_range(sh目次, "B3", "B2")
+    rg目次.api.Borders.LineStyle = LineStyle.xlContinuous
+    rg目次.font.name = "ＭＳ ゴシック"
+    sh目次.range(STR_目次の列自動調整範囲).autofit()
 
     # 関係位置が同一であるものを色分けする。
     int_col関係位置 = ListIndex目次シート表.int_col関係位置
     int_col分類 = ListIndex目次シート表.int_col分類
     int_col管理番号 = ListIndex目次シート表.int_col管理番号
     tuple背景色設定 = Const目次シート書式.tuple背景色設定
-    row_array = create_cell_info(rg=toc_sh_rg, rg_head="B3")
+    row_array = create_cell_info(rg=rg目次, rg_head="B3")
     is_color_change = True
 
     for i_row in range(len(row_array)):
@@ -101,13 +93,13 @@ def func_toc_sh(wb2: xlwings.main.Book, ish_array):
             else:
                 s1 = row_array[i_row][int_col関係位置].address
                 s2 = row_array[i_row][int_col管理番号].address
-                sh.range(f"{s1}:{s2}").color = tuple背景色設定
+                sh目次.range(f"{s1}:{s2}").color = tuple背景色設定
                 is_color_change = False
         else:
             if is_switch:
                 s1 = row_array[i_row][int_col関係位置].address
                 s2 = row_array[i_row][int_col管理番号].address
-                sh.range(f"{s1}:{s2}").color = tuple背景色設定
+                sh目次.range(f"{s1}:{s2}").color = tuple背景色設定
             else:
                 is_color_change = True
 
@@ -123,37 +115,26 @@ def func_cover(wb3: xlwings.main.Book, ish_array):
     """
     sh = wb3.sheets(Constシート名.str表紙)
 
-    memo_title_rg = sh.range("B7")
-    last_update_date_rg = sh.range("G18")
-    last_update_date_rg_val = last_update_date_rg.value
-    second_last_update_date_rg = sh.range("G20")
-    second_last_update_date_rg_val = second_last_update_date_rg.value
-    third_last_update_date_rg = sh.range("G22")
-    item_nm_rg = sh.range("G37")
-    start_date_rg = sh.range("B41")
-    end_update_date_rg = sh.range("G41")
+    rgメモタイトル = sh.range("B7")
+    rg最終更新日 = sh.range("G18")
+    val最終更新日 = rg最終更新日.value
+    rg前回更新日 = sh.range("G20")
+    val前回更新日 = rg前回更新日.value
+    rg前々回更新日 = sh.range("G22")
+    rg項目数 = sh.range("G37")
+    rgメモ作成開始日 = sh.range("B41")
+    rgメモ作成終了日 = sh.range("G41")
 
-    # 前々回更新日
-    if second_last_update_date_rg_val is not None:
-        third_last_update_date_rg.value = second_last_update_date_rg_val
-
-    # 前回更新日
-    if last_update_date_rg_val is not None:
-        second_last_update_date_rg.value = last_update_date_rg_val
-
-    # 最終更新日
-    last_update_date_rg.value = datetime.datetime.now().strftime("%Y/%m/%d %T")
-    # 項目数
-    # item_nm_rg.value = sorted(ish_array, key=lambda x: x[ListIndex入力シート表.int管理No], reverse=True)[0][0]
-    item_nm_rg.value = len(ish_array)
-    # メモ作成開始日
+    if val前回更新日 is not None: rg前々回更新日.value = val前回更新日
+    if val最終更新日 is not None: rg前回更新日.value = val最終更新日
+    rg最終更新日.value = datetime.datetime.now().strftime("%Y/%m/%d %T")
+    rg項目数.value = len(ish_array)
     list_index = ListIndex入力シート表.int作成日
-    start_date_rg.value = sorted(ish_array, key=lambda x: x[list_index], reverse=False)[0][list_index]
-    # メモ作成終了日
+    rgメモ作成開始日.value = sorted(ish_array, key=lambda x: x[list_index], reverse=False)[0][list_index]
     list_index = ListIndex入力シート表.int更新日
-    end_update_date_rg.value = sorted(ish_array, key=lambda x: x[list_index], reverse=True)[0][list_index]
-    # メモタイトル記述
-    memo_title_rg.value = os.path.splitext(wb3.name)[0]
+    rgメモ作成終了日.value = sorted(ish_array, key=lambda x: x[list_index], reverse=True)[0][list_index]
+    # メモタイトルはファイル名を参照して更新
+    rgメモタイトル.value = os.path.splitext(wb3.name)[0]
 
 
 def func_contents(wb4: xlwings.main.Book, list入力シート: list):
@@ -163,10 +144,12 @@ def func_contents(wb4: xlwings.main.Book, list入力シート: list):
     :param list入力シート:
     :return: None
     """
-    sh = wb4.sheets(Constシート名.str内容)
+    sh内容 = wb4.sheets(Constシート名.str内容)
     # 索引シートのデータを取得　i_index_array
-    rg = wb4.sheets(Constシート名.str索引登録)
-    list索引登録 = get_cell_range(rg, "B6", "B5").options(ndim=2).value
+    sh索引登録 = wb4.sheets(Constシート名.str索引登録)
+    wc索引登録 = sh索引登録.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_col索引登録No)
+    rg索引登録 = get_cell_range(sh=sh索引登録, start_address=wc索引登録.address, end_address=wc索引登録.offset(-1, 0).address)
+    list索引登録 = rg索引登録.options(ndim=2).value
     input_array = []
 
     for i in list入力シート:
@@ -208,10 +191,10 @@ def func_contents(wb4: xlwings.main.Book, list入力シート: list):
         ])
 
     # 入力を実施
-    sh.range("B3").value = input_array
+    sh内容.range("B3").value = input_array
 
     # 折り返して表示
-    rg2 = get_cell_range(sh, "C3", "C2")
+    rg2 = get_cell_range(sh内容, "C3", "C2")
     rg2.api.WrapText = True
     rg2.api.Borders.LineStyle = LineStyle.xlContinuous
 
@@ -219,19 +202,19 @@ def func_contents(wb4: xlwings.main.Book, list入力シート: list):
     end_point = 9
     change_formula = 7
     for i in range(len(list入力シート)):
-        rg3 = sh.range(f"B{str(start_point + (change_formula * i))}:D{str(end_point + (change_formula * i))}")
+        rg3 = sh内容.range(f"B{str(start_point + (change_formula * i))}:D{str(end_point + (change_formula * i))}")
         rg3.api.Borders(BordersIndex.xlEdgeBottom).LineStyle = LineStyle.xlDouble
         rg3.api.Borders(BordersIndex.xlEdgeLeft).LineStyle = LineStyle.xlDouble
         rg3.api.Borders(BordersIndex.xlEdgeRight).LineStyle = LineStyle.xlDouble
-        rg4 = sh.range(f"C{3 + (change_formula * i)}")
+        rg4 = sh内容.range(f"C{3 + (change_formula * i)}")
         rg4.font.bold = True
 
-    rg5 = get_cell_range(sh, "B3", "C2")
+    rg5 = get_cell_range(sh内容, "B3", "C2")
     rg5.font.name = "ＭＳ ゴシック"
     rg5.api.VerticalAlignment = VAlign.xlVAlignJustify
-    rg6 = sh.range(sh.range("C3"), sh.range("C3").end("down"))
+    rg6 = sh内容.range(sh内容.range("C3"), sh内容.range("C3").end("down"))
     rg6.HorizontalAlignment = HAlign.xlHAlignLeft
-    sh.range("B:B").autofit()
+    sh内容.range("B:B").autofit()
 
 
 def get_synonym(list_索引登録シートデータ, i):
@@ -255,13 +238,14 @@ def func_input_index(wb5: xlwings.main.Book, ish_array: list):
     :param ish_array:
     :return:
     """
-    sh = wb5.sheets(Constシート名.str索引登録)
+    sh索引登録 = wb5.sheets(Constシート名.str索引登録)
     init_array = []
-    output_cell = sh.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_colデータ開始)
-    if sh.range("B6").value is not None:
+    output_cell = sh索引登録.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_colデータ開始)
+    wc = sh索引登録.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_col索引登録No)
+    if wc.value is not None:
         # 索引登録シートに既に値がある場合
         # 索引登録シートのデータを配列として取得
-        rg = get_cell_range(sh, "B6", "B5")
+        rg = get_cell_range(sh=sh索引登録, start_address=wc.address, end_address=wc.offset(-1, 0).address)
         i_index_array = rg.options(ndim=2).value
         for i in ish_array:
             # 入力シートのデータ数だけ繰り返す
@@ -301,7 +285,7 @@ def func_input_index(wb5: xlwings.main.Book, ish_array: list):
         output_cell.value = init_array
 
     # 罫線を引く
-    rg = get_cell_range(sh, "B6", "B5")
+    rg = get_cell_range(sh=sh索引登録, start_address=wc.address, end_address=wc.offset(-1, 0).address)
     rg.api.Borders.LineStyle = LineStyle.xlContinuous
     # フォントネームを設定
     rg.font.name = "ＭＳ ゴシック"
@@ -313,10 +297,11 @@ def func_index(wb6: xlwings.main.Book):
     :param wb6:
     :return:
     """
-    sh = wb6.sheets(Constシート名.str索引登録)
-    rg = get_cell_range(sh, "B6", "B5")
+    sh索引登録 = wb6.sheets(Constシート名.str索引登録)
+    wc = sh索引登録.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_col索引登録No)
+    rg = get_cell_range(sh=sh索引登録, start_address=wc.address, end_address=wc.offset(-1, 0).address)
     # 索引登録シートのデータをリストして取得し、「ヒョウゴ」項目でソート
-    list_索引登録シートデータ = sorted(rg.options(ndim=2).value, key=lambda x: x[4])
+    list_索引登録シートデータ = sorted(rg.options(ndim=2).value, key=lambda x: x[ListIndex索引登録シート表.intヒョウゴ])
 
     # 索引シート入力用配列の生成
     input_array = []
@@ -331,21 +316,21 @@ def func_index(wb6: xlwings.main.Book):
         ])
 
     # 索引シートに入力
-    sh2 = wb6.sheets(Constシート名.str索引)
-    # sh2.range("B3").value = input_array
-    sh2.cells(Const索引シート表.int_row開始, Const索引シート表.int_col開始).value = input_array
+    sh索引 = wb6.sheets(Constシート名.str索引)
+    sh索引.cells(Const索引シート表.int_row開始, Const索引シート表.int_col開始).value = input_array
 
     # 罫線を引く
-    rg2 = get_cell_range(sh2, "B3", "B2")
+    wc = sh索引.cells(Const索引シート表.int_row開始, Const索引シート表.int_col開始)
+    rg2 = get_cell_range(sh=sh索引, start_address=wc.address, end_address=wc.offset(-1, 0).address)
     rg2.api.Borders.LineStyle = LineStyle.xlContinuous
     # フォントネームを強制
     rg2.font.name = "ＭＳ ゴシック"
     # 列幅の自動調整
-    sh2.range(Const索引シート表.str列幅の自動調整).autofit()
+    sh索引.range(Const索引シート表.str列幅の自動調整).autofit()
 
     # 同一頭文字を色でグルーピング
     # Excelの指定範囲を配列として取得
-    row_array = create_cell_info(rg=rg2, rg_head="B3")
+    row_array = create_cell_info(rg=rg2, rg_head=wc.address)
     is_color_change = True
     int標語 = ListIndex索引シート表.int標語
     intヒョウゴ = ListIndex索引シート表.intヒョウゴ
@@ -363,13 +348,13 @@ def func_index(wb6: xlwings.main.Book):
             else:
                 s1 = row_array[i_row][int標語].address
                 s2 = row_array[i_row][int管理No].address
-                sh2.range(f"{s1}:{s2}").color = Const索引シート表.tuple_背景色設定
+                sh索引.range(f"{s1}:{s2}").color = Const索引シート表.tuple_背景色設定
                 is_color_change = False
         else:
             if is_switch:
                 s1 = row_array[i_row][int標語].address
                 s2 = row_array[i_row][int管理No].address
-                sh2.range(f"{s1}:{s2}").color = Const索引シート表.tuple_背景色設定
+                sh索引.range(f"{s1}:{s2}").color = Const索引シート表.tuple_背景色設定
             else:
                 is_color_change = True
 
