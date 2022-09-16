@@ -2,14 +2,19 @@ import os
 
 import xlwings as xw
 
-from src.common.const import ConstTitle, ConstVersion, ConstDateTime, Constシート名, Const入力シート表
+from src.common.const import ConstTitle, ConstVersion, ConstDateTime, Constシート名, Const入力シート表, ConstPDF追加シート表
 from src.common.util import XlwingsSpeedUp, sh_format, get_cell_range, common_err_chk
 
 
 def input_sh_format(wb1: xw.main.Book):
+    """
+    入力シートの初期化処理
+    :param wb1:
+    :return:
+    """
     sh = wb1.sheets(Constシート名.str入力)
     start_cell = sh.cells(Const入力シート表.int_rowデータ開始, Const入力シート表.int_col標語)
-    temp_cell = sh.cells(Const入力シート表.int_rowデータ開始 - 1, Const入力シート表.int_col標語)
+    temp_cell = sh.cells(Const入力シート表.int_rowデータ開始 - 1, Const入力シート表.int_col管理No)
     last_cell = sh.cells(temp_cell.end("down").row, temp_cell.end("right").column)
     range初期化範囲 = sh.range(start_cell, last_cell)
     range初期化範囲.clear_contents()
@@ -23,7 +28,7 @@ def input_sh_format(wb1: xw.main.Book):
     cell_list管理No範囲 = sh.range(start_cell, last_cell).options(ndim=1).value
     list_temp = []
     for i in range(len(cell_list管理No範囲)):
-        list_temp.append([int(i + 1), None])
+        list_temp.append([int(i + 1)])
     start_cell.value = list_temp
 
 
@@ -52,6 +57,42 @@ def create_save_name():
     return f"【{sn_part1}_{sn_part2}】{sn_part3}.xlsm"
 
 
+def get_sh_list():
+    return [
+        Constシート名.strPDF追加,
+        Constシート名.str入力,
+        Constシート名.str索引登録,
+        Constシート名.str表紙,
+        Constシート名.str目次,
+        Constシート名.str内容,
+        Constシート名.str索引]
+
+
+def pdf_add_sh_format(wb4: xw.main.Book):
+    """
+    PDF追加シートを初期化
+    :param wb4:
+    :return:
+    """
+    sh_PDF追加シート = wb4.sheets(Constシート名.strPDF追加)
+    start_cell = sh_PDF追加シート.cells(ConstPDF追加シート表.int_rowデータ開始, ConstPDF追加シート表.int_col追加したいシート名)
+
+    # データ開始行にデータがなければ処理しない
+    if start_cell.value is None: return None
+
+    # 不要なデータの削除
+    temp_cell = sh_PDF追加シート.cells(ConstPDF追加シート表.int_rowデータ開始 - 1, ConstPDF追加シート表.int_col追加したいシート名)
+    last_cell = sh_PDF追加シート.cells(temp_cell.end("down").row, temp_cell.end("right").column)
+    range初期化範囲 = sh_PDF追加シート.range(start_cell, last_cell)
+    range初期化範囲.clear_contents()
+
+
+def void不要なシートを削除(arg_wb: xw.main.Book):
+    sh_list = get_sh_list()
+    for sh in arg_wb.sheets:
+        if not (sh.name in sh_list): sh.delete()
+
+
 def create_memo(arg_wb: xw.main.Book):
     # フールプルーフ
     common_err_chk(arg_wb)
@@ -67,16 +108,17 @@ def create_memo(arg_wb: xw.main.Book):
     arg_wb = xw.books.active
 
     # 各種シート初期化
-    # 入力シート
-    input_sh_format(arg_wb)
-    # 索引登録シート
-    input_index_sh_format(arg_wb)
-    # 表紙シート
-    cover_sh_format(arg_wb)
-    # 目次、内容、索引
-    sh_format(arg_wb.sheets(Constシート名.str目次))
-    sh_format(arg_wb.sheets(Constシート名.str内容))
-    sh_format(arg_wb.sheets(Constシート名.str索引))
+    input_sh_format(arg_wb)                       # 入力シート
+    input_index_sh_format(arg_wb)                 # 索引登録シート
+    cover_sh_format(arg_wb)                       # 表紙シート
+    sh_format(arg_wb.sheets(Constシート名.str目次)) # 目次
+    sh_format(arg_wb.sheets(Constシート名.str内容)) # 内容
+    sh_format(arg_wb.sheets(Constシート名.str索引)) # 索引
+    pdf_add_sh_format(arg_wb)                     # PDF追加シート
+
+    # 指定のシート以外は削除
+    void不要なシートを削除(arg_wb)
+
     arg_wb.sheets(Constシート名.str表紙).activate()
     arg_wb.save()
 

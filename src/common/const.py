@@ -13,6 +13,7 @@ class Constシート名:
     str索引 = "索引"
     str索引登録 = "索引登録"
     strPDF追加 = "PDF追加"
+    str補足 = "補足⇒"
 
 
 class ListIndex入力シート表:

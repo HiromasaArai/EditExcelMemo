@@ -209,9 +209,12 @@ def create_cell_info(rg: xlwings.main.Range, rg_head: str):
     return row_array
 
 
-def common_err_chk(err_chk_wb):
-    # フールプルーフ
-    # すべてのシートが存在していることを確認する
+def is_common_err(err_chk_wb):
+    """
+    すべてのシートが存在していることを確認する
+    :param err_chk_wb:
+    :return:
+    """
     list_strブック内の全シート名 = [i.name for i in err_chk_wb.sheets]
     if not (Constシート名.str表紙 in list_strブック内の全シート名
             and Constシート名.str内容 in list_strブック内の全シート名
@@ -219,6 +222,15 @@ def common_err_chk(err_chk_wb):
             and Constシート名.str目次 in list_strブック内の全シート名
             and Constシート名.str索引 in list_strブック内の全シート名
             and Constシート名.str索引登録 in list_strブック内の全シート名
-            and Constシート名.strPDF追加 in list_strブック内の全シート名):
+            and Constシート名.strPDF追加 in list_strブック内の全シート名
+            and Constシート名.str補足 in list_strブック内の全シート名):
+        return True
+    return False
+
+
+def common_err_chk(err_chk_wb):
+    # フールプルーフ
+    # すべてのシートが存在していることを確認する
+    if is_common_err(err_chk_wb):
         print("Excelが対象のものと異なります。")
         exit(1)
