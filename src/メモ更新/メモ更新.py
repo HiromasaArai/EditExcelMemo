@@ -3,10 +3,10 @@ import datetime
 import os
 
 import xlwings
-from xlwings.constants import PaperSize, LineStyle, BordersIndex, VAlign, HAlign
+from xlwings.constants import LineStyle, BordersIndex, VAlign, HAlign
 
 from src.common.const import Constシート名, ListIndex入力シート表, ListIndex索引登録シート表, ListIndex目次シート表, Const目次シート書式, \
-    Const索引登録シート表, Const索引シート表, ListIndex索引シート表, Const入力シート表, ConstPDF追加シート表, ListIndexPDF追加シート表
+    Const索引登録シート表, Const索引シート表, ListIndex索引シート表, Const入力シート表
 from src.common.util import get_cell_range, sh_format, XlwingsSpeedUp, create_cell_info, common_err_chk
 
 STR_目次の列自動調整範囲 = "B:I"
@@ -359,83 +359,6 @@ def func_index(wb6: xlwings.main.Book):
                 is_color_change = True
 
 
-def sh_page_setup(sh: xlwings.main.Sheet, print_size):
-    sh.api.PageSetup.Zoom = False
-    sh.api.PageSetup.FitToPagesWide = 1
-    sh.api.PageSetup.FitToPagesTall = False
-    sh.api.PageSetup.CenterHorizontally = True
-    sh.api.PageSetup.PaperSize = print_size
-    if sh.name == Constシート名.str表紙:
-        sh.api.PageSetup.CenterHeader = ""
-        sh.api.PageSetup.CenterFooter = ""
-    else:
-        sh.api.PageSetup.CenterHeader = "&A"
-        sh.api.PageSetup.CenterFooter = "&P/&N"
-
-
-def memo2pdf(wb7: xlwings.main.Book, list_valPDF追加シート表, print_size=PaperSize.xlPaperA4):
-    """
-    既定のシートをPDF化する
-    また、PDF追加シートに記述してあるシートをそこに追加する
-    :param wb7:
-    :param list_valPDF追加シート表:
-    :param print_size:
-    :return:
-    """
-    # ページレイアウト
-    sh_page_setup(wb7.sheets(Constシート名.str表紙), print_size)
-    sh_page_setup(wb7.sheets(Constシート名.str目次), print_size)
-    sh_page_setup(wb7.sheets(Constシート名.str内容), print_size)
-    sh_page_setup(wb7.sheets(Constシート名.str索引), print_size)
-
-    # 表紙裏の作成
-    str_表紙裏sh名 = "表紙裏"
-    sh_表紙裏 = wb7.sheets.add(str_表紙裏sh名, after=Constシート名.str表紙)
-    sh_表紙裏.range("A1").value = " "
-    to_pdf_include = [
-        Constシート名.str表紙,
-        str_表紙裏sh名,
-        Constシート名.str目次,
-        Constシート名.str内容,
-        Constシート名.str索引
-    ]
-    if list_valPDF追加シート表 is not None:
-        for row in list_valPDF追加シート表:
-            str_itrシート名 = row[ListIndexPDF追加シート表.int追加したいシート名]
-            sh_itrシート = wb7.sheets(str_itrシート名)
-            sh_page_setup(sh_itrシート, print_size)
-            to_pdf_include.append(str_itrシート名)
-
-    # PDF化
-    wb7.to_pdf(include=to_pdf_include)
-    # 使い終わったシートを削除
-    sh_表紙裏.delete()
-
-
-def list_valPDF追加シート表取得(arg_wb):
-    sh = arg_wb.sheets(Constシート名.strPDF追加)
-    wc = sh.cells(ConstPDF追加シート表.int_rowデータ開始, ConstPDF追加シート表.int_col追加したいシート名)
-    if wc.value is None: return None
-    err_msg = "シートがブック内に存在しません。"
-    rg = get_cell_range(sh=sh, start_address=wc.address, end_address=wc.offset(-1, 0).address)
-    list_valPDF追加シート表 = rg.options(ndim=2).value
-    list_str全シート名 = [i.name for i in arg_wb.sheets]
-    is_シートあり = True
-    for row in list_valPDF追加シート表:
-        if row[ListIndexPDF追加シート表.int追加したいシート名] in list_str全シート名:
-            row[ListIndexPDF追加シート表.intエラーメッセージ] = None
-        else:
-            row[ListIndexPDF追加シート表.intエラーメッセージ] = err_msg
-            is_シートあり = False
-
-    wc.value = list_valPDF追加シート表
-    if not is_シートあり:
-        print(err_msg)
-        exit(1)
-
-    return list_valPDF追加シート表
-
-
 def update_memo(arg_wb):
     """
     シートごとの処理を分けている複合関数
@@ -444,9 +367,6 @@ def update_memo(arg_wb):
     """
     # フールプルーフ
     common_err_chk(arg_wb)
-
-    # PDF化対象に含めたいシート名が、ブック内に存在するかを確認
-    list_valPDF追加シート表 = list_valPDF追加シート表取得(arg_wb)
 
     sh = arg_wb.sheets(Constシート名.str入力)
     if sh.cells(Const入力シート表.int_rowデータ開始, Const入力シート表.int_col標語).value is None:
@@ -464,18 +384,12 @@ def update_memo(arg_wb):
     sh_format(arg_wb.sheets(Constシート名.str内容))
     sh_format(arg_wb.sheets(Constシート名.str索引))
 
-    # 表紙シート入力
-    func_cover(arg_wb, ish_array)
-    # 目次シート入力
-    ish_array = func_toc_sh(arg_wb, ish_array)
-    # 索引登録シート入力
-    func_input_index(arg_wb, ish_array)
-    # 内容シート入力
-    func_contents(arg_wb, ish_array)
-    # 索引シートの入力
-    func_index(arg_wb)
-    # 成果物をPDF化
-    memo2pdf(wb7=arg_wb, list_valPDF追加シート表=list_valPDF追加シート表)
+    # 各シート入力
+    func_cover(arg_wb, ish_array)              # 入力シート入力
+    ish_array = func_toc_sh(arg_wb, ish_array) # 目次シート入力
+    func_input_index(arg_wb, ish_array)        # 索引登録シート入力
+    func_contents(arg_wb, ish_array)           # 内容シート入力
+    func_index(arg_wb)                         # 索引シートの入力
     arg_wb.sheets(Constシート名.str入力).activate()
 
 

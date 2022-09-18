@@ -7,6 +7,7 @@ for /f "usebackq delims=" %%A in (`CD`) do set project_path=%%A
 
 call %project_path%\.venv\Scripts\activate.bat
 pyinstaller %project_path%\src\メモ更新\メモ更新.py --name メモ更新 --onefile --noconsole
+pyinstaller %project_path%\src\成果物をPDF化\成果物をPDF化.py --name 成果物をPDF化 --onefile --noconsole
 pyinstaller %project_path%\src\別名登録\別名登録.py --name 別名登録 --onefile --noconsole
 pyinstaller %project_path%\src\新規メモ作成\新規メモ作成.py --name 新規メモ作成 --onefile --noconsole
 pyinstaller %project_path%\src\索引検索\索引検索.py --name 索引検索 --onefile --noconsole
