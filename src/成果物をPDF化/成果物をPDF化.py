@@ -3,7 +3,6 @@ from xlwings.constants import PaperSize
 
 from src.common.const import Constシート名, ListIndexPDF追加シート表, ConstPDF追加シート表
 from src.common.util import XlwingsSpeedUp, get_cell_range
-from src.メモ更新.メモ更新 import update_memo
 
 __ERR_MSG001 = "[ERR_001]シートがブック内に存在しません。"
 __ERR_MSG002 = "[ERR_002]シートがブック内に存在しません。"

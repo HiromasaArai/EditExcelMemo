@@ -65,7 +65,8 @@ def get_sh_list():
         Constシート名.str表紙,
         Constシート名.str目次,
         Constシート名.str内容,
-        Constシート名.str索引]
+        Constシート名.str索引,
+        Constシート名.str補足]
 
 
 def pdf_add_sh_format(wb4: xw.main.Book):
@@ -102,10 +103,9 @@ def create_memo(arg_wb: xw.main.Book):
     save_name = create_save_name()
     save_fullname = os.path.join(save_dir, save_name)
 
-    # 既存ブックの保存 & 別名で保存（コピーしたブックを開くことと同義）
-    arg_wb.save()
-    arg_wb.save(save_fullname)
-    arg_wb = xw.books.active
+    arg_wb.save()                # 既存ブックの保存
+    arg_wb.save(save_fullname)   # 別名で保存（コピーしたブックを開くことと同義）
+    arg_wb = xw.books.active     # アクティブなブック（新規ブック）を作業用のWBとする
 
     # 各種シート初期化
     input_sh_format(arg_wb)                       # 入力シート
@@ -120,7 +120,7 @@ def create_memo(arg_wb: xw.main.Book):
     void不要なシートを削除(arg_wb)
 
     arg_wb.sheets(Constシート名.str表紙).activate()
-    arg_wb.save()
+    arg_wb.save() # 作業が完了したので保存
 
 
 if __name__ == '__main__':
