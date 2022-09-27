@@ -13,6 +13,8 @@
 /exe/output/学習メモ総括.xlsx
 /exe/output/学習メモ総括bkp.xlsx
 
+/exe/err_logs/err.log
+
 /exe/メモ更新.exe
 /exe/別名登録.exe
 /exe/新規メモ作成.exe

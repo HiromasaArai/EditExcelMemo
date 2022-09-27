@@ -1,3 +1,4 @@
+import time
 from sys import exit
 import datetime
 import os
@@ -7,7 +8,7 @@ from xlwings.constants import LineStyle, BordersIndex, VAlign, HAlign
 
 from src.common.const import Constシート名, ListIndex入力シート表, ListIndex索引登録シート表, ListIndex目次シート表, Const目次シート書式, \
     Const索引登録シート表, Const索引シート表, ListIndex索引シート表, Const入力シート表
-from src.common.util import get_cell_range, sh_format, XlwingsSpeedUp, create_cell_info, common_err_chk
+from src.common.util import get_cell_range, sh_format, XlwingsSpeedUp, create_cell_info, common_err_chk, err_log_add
 
 STR_目次の列自動調整範囲 = "B:I"
 
@@ -46,6 +47,7 @@ def func_toc_sh(wb2: xlwings.main.Book, ish_array):
     :param ish_array:
     :return:項番の付与された入力シートデータ（二次元配列）
     """
+    time_sta = time.time()
     sh目次 = wb2.sheets(Constシート名.str目次)
     for i in range(len(ish_array)):
         # 項目番号をリストに追加
@@ -103,6 +105,7 @@ def func_toc_sh(wb2: xlwings.main.Book, ish_array):
             else:
                 is_color_change = True
 
+    err_log_add(f"[log]目次シート入力: {time.time() - time_sta}")
     return ish_array
 
 
@@ -113,6 +116,7 @@ def func_cover(wb3: xlwings.main.Book, ish_array):
     :param ish_array:
     :return:
     """
+    time_sta = time.time()
     sh = wb3.sheets(Constシート名.str表紙)
 
     rgメモタイトル = sh.range("B7")
@@ -135,6 +139,7 @@ def func_cover(wb3: xlwings.main.Book, ish_array):
     rgメモ作成終了日.value = sorted(ish_array, key=lambda x: x[list_index], reverse=True)[0][list_index]
     # メモタイトルはファイル名を参照して更新
     rgメモタイトル.value = os.path.splitext(wb3.name)[0]
+    err_log_add(f"[log]入力シート入力: {time.time() - time_sta}")
 
 
 def func_contents(wb4: xlwings.main.Book, list入力シート: list):
@@ -144,14 +149,18 @@ def func_contents(wb4: xlwings.main.Book, list入力シート: list):
     :param list入力シート:
     :return: None
     """
+    time_sta = time.time()
     sh内容 = wb4.sheets(Constシート名.str内容)
     # 索引シートのデータを取得　i_index_array
     sh索引登録 = wb4.sheets(Constシート名.str索引登録)
     wc索引登録 = sh索引登録.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_col索引登録No)
-    rg索引登録 = get_cell_range(sh=sh索引登録, start_address=wc索引登録.address, end_address=wc索引登録.offset(-1, 0).address)
-    list索引登録 = rg索引登録.options(ndim=2).value
-    input_array = []
+    if wc索引登録.value is None:
+        list索引登録 = []
+    else:
+        rg索引登録 = get_cell_range(sh=sh索引登録, start_address=wc索引登録.address, end_address=wc索引登録.offset(-1, 0).address)
+        list索引登録 = rg索引登録.options(ndim=2).value
 
+    input_array = []
     for i in list入力シート:
         # 入力用データ（配列）生成
         input_array.append([
@@ -215,14 +224,21 @@ def func_contents(wb4: xlwings.main.Book, list入力シート: list):
     rg6 = sh内容.range(sh内容.range("C3"), sh内容.range("C3").end("down"))
     rg6.HorizontalAlignment = HAlign.xlHAlignLeft
     sh内容.range("B:B").autofit()
+    err_log_add(f"[log]内容シート編集: {time.time() - time_sta}")
 
 
-def get_synonym(list_索引登録シートデータ, i):
+def get_synonym(list索引登録シートデータ, list入力シートデータ):
+    """
+    別名を取得
+    :param list索引登録シートデータ: 1テーブル分
+    :param list入力シートデータ: 1レコード分
+    :return:
+    """
     synonym = None
-    for i_index in list_索引登録シートデータ:
+    for i_index in list索引登録シートデータ:
         # 管理番号の一致判定と標語の不一致判定
-        is_管理No一致 = i_index[ListIndex索引登録シート表.int管理No] == i[ListIndex入力シート表.int管理No]
-        is_標語の不一致 = i_index[ListIndex索引登録シート表.int標語] != i[ListIndex入力シート表.int標語]
+        is_管理No一致 = i_index[ListIndex索引登録シート表.int管理No] == list入力シートデータ[ListIndex入力シート表.int管理No]
+        is_標語の不一致 = i_index[ListIndex索引登録シート表.int標語] != list入力シートデータ[ListIndex入力シート表.int標語]
         if is_管理No一致 and is_標語の不一致:
             if synonym is None:
                 synonym = i_index[ListIndex索引登録シート表.int標語]
@@ -231,80 +247,52 @@ def get_synonym(list_索引登録シートデータ, i):
     return synonym
 
 
-def func_input_index(wb5: xlwings.main.Book, ish_array: list):
+def func_input_index(__wb: xlwings.main.Book, __ish_array: list):
     """
     索引登録シート初期設定及びデータ取得に関する関数
-    :param wb5:
-    :param ish_array:
+    :param __wb:
+    :param __ish_array:
     :return:
     """
-    sh索引登録 = wb5.sheets(Constシート名.str索引登録)
-    init_array = []
-    output_cell = sh索引登録.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_colデータ開始)
-    wc = sh索引登録.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_col索引登録No)
-    if wc.value is not None:
-        # 索引登録シートに既に値がある場合
-        # 索引登録シートのデータを配列として取得
-        rg = get_cell_range(sh=sh索引登録, start_address=wc.address, end_address=wc.offset(-1, 0).address)
-        i_index_array = rg.options(ndim=2).value
-        for i in ish_array:
-            # 入力シートのデータ数だけ繰り返す
-            is_match = False
-            for i2 in i_index_array:
-                if i[ListIndex入力シート表.int管理No] == i2[ListIndex索引登録シート表.int管理No]:
-                    # 管理Noが一致していれば、目次Noと分類入れ替え
-                    i2[ListIndex索引登録シート表.int関係位置] = i[ListIndex入力シート表.int関係位置]
-                    i2[ListIndex索引登録シート表.int目次No] = i[ListIndex入力シート表.int目次No]
-                    i2[ListIndex索引登録シート表.int分類] = i[ListIndex入力シート表.int分類]
-                    is_match = True
-            if not is_match:
-                i_index_array.append([
-                    len(i_index_array),
-                    i[ListIndex入力シート表.int目次No],
-                    i[ListIndex入力シート表.int関係位置],
-                    i[ListIndex入力シート表.int分類],
-                    i[ListIndex入力シート表.int標語],
-                    i[ListIndex入力シート表.intヒョウゴ],
-                    i[ListIndex入力シート表.int管理No]
-                ])
-        output_cell.value = i_index_array
-    else:
-        # 入力シートの情報のみで索引登録シートの入力を行う
-        int索引No_temp = 1
-        for i in ish_array:
-            init_array.append([
-                int索引No_temp,
-                i[ListIndex入力シート表.int目次No],
-                i[ListIndex入力シート表.int関係位置],
-                i[ListIndex入力シート表.int分類],
-                i[ListIndex入力シート表.int標語],
-                i[ListIndex入力シート表.intヒョウゴ],
-                i[ListIndex入力シート表.int管理No]
-            ])
-            int索引No_temp += 1
-        output_cell.value = init_array
+    time_sta = time.time()
+    __sh索引登録 = __wb.sheets(Constシート名.str索引登録)
+    __output_cell = __sh索引登録.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_colデータ開始)
+    __wc = __sh索引登録.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_col索引登録No)
+
+    # データがない場合は処理しない
+    if __wc.value is None: return None
+
+    # 索引登録シートに既に値がある場合
+    # 索引登録シートのデータを配列として取得
+    __i_index_array = get_cell_range(
+        sh=__sh索引登録,
+        start_address=__wc.address,
+        end_address=__wc.offset(-1, 0).address).options(ndim=2).value
+
+    # 索引登録シートのデータ分繰り返す
+    for i in __i_index_array:
+        for i2 in __ish_array:
+            # 管理Noが一致していれば、目次Noと分類入れ替え
+            if i[ListIndex索引登録シート表.int管理No] == i2[ListIndex入力シート表.int管理No]:
+                i[ListIndex索引登録シート表.int関係位置] = i2[ListIndex入力シート表.int関係位置]
+                i[ListIndex索引登録シート表.int目次No] = i2[ListIndex入力シート表.int目次No]
+                i[ListIndex索引登録シート表.int分類] = i2[ListIndex入力シート表.int分類]
+
+    # セルへ出力
+    __output_cell.value = __i_index_array
 
     # 罫線を引く
-    rg = get_cell_range(sh=sh索引登録, start_address=wc.address, end_address=wc.offset(-1, 0).address)
-    rg.api.Borders.LineStyle = LineStyle.xlContinuous
+    __wc2 = get_cell_range(sh=__sh索引登録, start_address=__wc.address, end_address=__wc.offset(-1, 0).address)
+    __wc2.api.Borders.LineStyle = LineStyle.xlContinuous
     # フォントネームを設定
-    rg.font.name = "ＭＳ ゴシック"
+    __wc2.font.name = "ＭＳ ゴシック"
+    err_log_add(f"[log]索引登録シート入力: {time.time() - time_sta}")
 
 
-def func_index(wb6: xlwings.main.Book):
-    """
-    索引シート編集
-    :param wb6:
-    :return:
-    """
-    sh索引登録 = wb6.sheets(Constシート名.str索引登録)
-    wc = sh索引登録.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_col索引登録No)
-    rg = get_cell_range(sh=sh索引登録, start_address=wc.address, end_address=wc.offset(-1, 0).address)
-    # 索引登録シートのデータをリストして取得し、「ヒョウゴ」項目でソート
-    list_索引登録シートデータ = sorted(rg.options(ndim=2).value, key=lambda x: x[ListIndex索引登録シート表.intヒョウゴ])
-
+def list索引シート入力用配列の生成(list_索引登録シートデータ: list, ish_array: list):
     # 索引シート入力用配列の生成
     input_array = []
+    # 索引登録シートから取得
     for i in list_索引登録シートデータ:
         input_array.append([
             i[ListIndex索引登録シート表.int標語],
@@ -314,19 +302,48 @@ def func_index(wb6: xlwings.main.Book):
             i[ListIndex索引登録シート表.int目次No],
             i[ListIndex索引登録シート表.int管理No]
         ])
+    # 入力シートから取得
+    for i in ish_array:
+        input_array.append([
+            i[ListIndex入力シート表.int標語],
+            i[ListIndex入力シート表.intヒョウゴ],
+            i[ListIndex入力シート表.int関係位置],
+            i[ListIndex入力シート表.int分類],
+            i[ListIndex入力シート表.int目次No],
+            i[ListIndex入力シート表.int管理No]
+        ])
+    # return input_array
+    # 生成したリストを「ヒョウゴ」の要素を対象にしてソートする。
+    return sorted(input_array, key=lambda x: x[ListIndex索引シート表.intヒョウゴ])
 
-    # 索引シートに入力
+
+def func_index(wb6: xlwings.main.Book, ish_array: list):
+    """
+    索引シート編集
+    :param wb6:
+    :param ish_array:
+    :return:
+    """
+    time_sta = time.time()
+    sh索引登録 = wb6.sheets(Constシート名.str索引登録)
+    wc = sh索引登録.cells(Const索引登録シート表.int_rowデータ開始, Const索引登録シート表.int_col索引登録No)
+    if wc.value is None:
+        list_索引登録シートデータ = []
+    else:
+        rg = get_cell_range(sh=sh索引登録, start_address=wc.address, end_address=wc.offset(-1, 0).address)
+        # 索引登録シートのデータをリストして取得し、「ヒョウゴ」項目でソート
+        list_索引登録シートデータ = rg.options(ndim=2).value
+
+    # 索引シート入力用配列の生成
+    input_array = list索引シート入力用配列の生成(list_索引登録シートデータ, ish_array)
+
     sh索引 = wb6.sheets(Constシート名.str索引)
-    sh索引.cells(Const索引シート表.int_row開始, Const索引シート表.int_col開始).value = input_array
-
-    # 罫線を引く
-    wc = sh索引.cells(Const索引シート表.int_row開始, Const索引シート表.int_col開始)
+    sh索引.cells(Const索引シート表.int_row開始, Const索引シート表.int_col開始).value = input_array       # 索引シートに入力
+    wc = sh索引.cells(Const索引シート表.int_row開始, Const索引シート表.int_col開始)                      # セル範囲取得
     rg2 = get_cell_range(sh=sh索引, start_address=wc.address, end_address=wc.offset(-1, 0).address)
-    rg2.api.Borders.LineStyle = LineStyle.xlContinuous
-    # フォントネームを強制
-    rg2.font.name = "ＭＳ ゴシック"
-    # 列幅の自動調整
-    sh索引.range(Const索引シート表.str列幅の自動調整).autofit()
+    rg2.api.Borders.LineStyle = LineStyle.xlContinuous                                             # 罫線を引く
+    rg2.font.name = "ＭＳ ゴシック"                                                                  # フォントネームを強制
+    sh索引.range(Const索引シート表.str列幅の自動調整).autofit()                                         # 列幅の自動調整
 
     # 同一頭文字を色でグルーピング
     # Excelの指定範囲を配列として取得
@@ -335,13 +352,9 @@ def func_index(wb6: xlwings.main.Book):
     int標語 = ListIndex索引シート表.int標語
     intヒョウゴ = ListIndex索引シート表.intヒョウゴ
     int管理No = ListIndex索引シート表.int管理No
-
     for i_row in range(len(row_array)):
-        if i_row == 0:
-            continue
-
+        if i_row == 0: continue
         is_switch = str(row_array[i_row - 1][intヒョウゴ].val)[0] == str(row_array[i_row][intヒョウゴ].val)[0]
-
         if is_color_change:
             if is_switch:
                 pass
@@ -357,6 +370,8 @@ def func_index(wb6: xlwings.main.Book):
                 sh索引.range(f"{s1}:{s2}").color = Const索引シート表.tuple_背景色設定
             else:
                 is_color_change = True
+
+    err_log_add(f"[log]索引シート編集: {time.time() - time_sta}")
 
 
 def update_memo(arg_wb):
@@ -389,7 +404,7 @@ def update_memo(arg_wb):
     ish_array = func_toc_sh(arg_wb, ish_array) # 目次シート入力
     func_input_index(arg_wb, ish_array)        # 索引登録シート入力
     func_contents(arg_wb, ish_array)           # 内容シート入力
-    func_index(arg_wb)                         # 索引シートの入力
+    func_index(arg_wb, ish_array)              # 索引シートの入力
     arg_wb.sheets(Constシート名.str入力).activate()
 
 
